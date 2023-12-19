@@ -30,6 +30,7 @@
 #include "ui/gfx.h"
 #include "ui/helper.h"
 #include "ui/main.h"
+#include "../misc.h"
 
 #ifdef UART_DEBUG
 	#include "driver/uart.h"
@@ -499,6 +500,76 @@ void StopSpectrum(void) {
 	UI_DrawMain(false);
 }
 
+
+
+static inline void KEY_UP_fn()
+{
+	if (bHold) {
+		ChangeHoldFreq(TRUE);
+	} else {
+		ChangeCenterFreq(TRUE);
+	}
+}
+
+static inline void KEY_DOWN_fn()
+{
+	if (bHold) {
+		ChangeHoldFreq(FALSE);
+	} else {
+		ChangeCenterFreq(FALSE);
+	}
+}
+
+static inline void KEY_EXIT_fn()
+{
+	bExit = TRUE;
+}
+
+
+static inline void KEY_7_fn()
+{
+	bHold ^= 1;
+	DrawLabels();
+}
+
+static inline void ChangeBandPreset_UP()
+{
+	ChangeBandPreset(TRUE);
+}
+static inline void ChangeBandPreset_DOWN()
+{
+	ChangeBandPreset(FALSE);
+}
+
+static inline void ChangeSquelchLevel_UP()
+{
+	ChangeBandPreset(TRUE);
+}
+static inline void ChangeSquelchLevel_DOWN()
+{
+	ChangeBandPreset(FALSE);
+}
+
+void (*check_key_fn[])(void) ={
+	[KEY_0] = &ToggleFilter,
+	[KEY_1] = &IncrementStepIndex,
+	[KEY_2] = &ChangeBandPreset_UP,
+	[KEY_3] = &IncrementModulation,
+	[KEY_4] = &IncrementFreqStepIndex,
+	[KEY_5] = &ChangeBandPreset_DOWN,
+	[KEY_6] = &ChangeSquelchLevel_UP,
+	[KEY_7] = &KEY_7_fn,
+	[KEY_8] = &ChangeDisplayMode,
+	[KEY_9] = &ChangeSquelchLevel_DOWN,
+	[KEY_MENU] = &JumpToVFO,
+	[KEY_UP] = &KEY_UP_fn,
+	[KEY_DOWN] = &KEY_DOWN_fn,
+	[KEY_EXIT] = &KEY_EXIT_fn,
+	[KEY_STAR] = &IncrementScanDelay,
+	[KEY_HASH] = &ToggleNarrowWide,
+	[KEY_NONE] = &FUNCTION_NOP,
+};
+
 void CheckKeys(void) {
 	static uint8_t KeyHoldTimer;
 	static KEY_t Key;
@@ -514,73 +585,7 @@ void CheckKeys(void) {
 	}
 	if (Key != LastKey || KeyHoldTimer >= 50) {
 		KeyHoldTimer = 0;
-		switch (Key) {
-			case KEY_NONE:
-				break;
-			case KEY_EXIT:
-				bExit = TRUE;
-				return;
-			case KEY_MENU:
-				JumpToVFO();
-				return;
-			case KEY_UP:
-				if (!bHold) {
-					ChangeCenterFreq(TRUE);
-				} else {
-					ChangeHoldFreq(TRUE);
-				}
-				break;
-			case KEY_DOWN:
-				if (!bHold) {
-					ChangeCenterFreq(FALSE);
-				} else {
-					ChangeHoldFreq(FALSE);
-				}
-				break;
-			case KEY_1:
-				IncrementStepIndex();
-				break;
-			case KEY_2:
-#ifdef ENABLE_SPECTRUM_PRESETS
-				ChangeBandPreset(TRUE);
-#endif
-				break;
-			case KEY_3:
-				IncrementModulation();
-				break;
-			case KEY_4:
-				IncrementFreqStepIndex();
-				break;
-			case KEY_5:
-#ifdef ENABLE_SPECTRUM_PRESETS
-				ChangeBandPreset(FALSE);
-#endif
-				break;
-			case KEY_6:
-				ChangeSquelchLevel(TRUE);
-				break;
-			case KEY_7:
-				bHold ^= 1;
-				DrawLabels();
-				break;
-			case KEY_8:
-				ChangeDisplayMode();
-				break;
-			case KEY_9:
-				ChangeSquelchLevel(FALSE);
-				break;
-			case KEY_0:
-				ToggleFilter();
-				break;
-			case KEY_HASH:
-				ToggleNarrowWide();
-				break;
-			case KEY_STAR:
-				IncrementScanDelay();
-				break;
-			default:
-				break;
-		}
+		check_key_fn[Key]();
 		LastKey = Key;
 	}
 }
