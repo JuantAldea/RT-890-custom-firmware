@@ -78,8 +78,8 @@ SECTIONS
 
 	.fill :
 	{
+		/* . = ALIGN(0x80) - 1;*/
 		. = ORIGIN(FLASH) + LENGTH(FLASH) - 1;
 		BYTE(0x00)
 	} > FLASH
 }
-
