@@ -36,6 +36,7 @@
 #include "ui/main.h"
 #include "ui/menu.h"
 #include "ui/version.h"
+#include <stdint.h>
 
 static const char Menu[][14] = {
 	"Startup Logo  ",
@@ -149,7 +150,7 @@ uint16_t gSettingGolay;
 
 uint8_t gMenuIndex;
 uint8_t gSettingIndex;
-uint8_t gSettingsCount = sizeof(Menu) / sizeof(Menu[0]);
+uint8_t gSettingsCount = ARRAY_SIZE(Menu);
 
 static void DrawMenu(uint8_t Index)
 {
@@ -1081,45 +1082,60 @@ void MENU_Redraw(bool bClear)
 	MENU_PlayAudio(gMenuIndex);
 }
 
+
+void KEY_N_fn(uint8_t Key){
+	MENU_Digit(Key);
+	BEEP_Play(740, 2, 100);
+}
+
+void KEY_MENU_fn(uint8_t Key){
+	gMenuIndex = (gMenuIndex + gSettingIndex) % gSettingsCount;
+	UI_DrawString(1, 112, "  ", 2);
+	MENU_DrawSetting();
+	BEEP_Play(740, 3, 80);
+}
+
+void KEY_ARROWS_fn(uint8_t Key){
+	UI_DrawString(1, 112, "  ", 2);
+	MENU_Next(Key);
+	MENU_PlayAudio((gMenuIndex + gSettingIndex) % gSettingsCount);
+	BEEP_Play(740, 2, 100);
+}
+
+void KEY_exit_fn(uint8_t Key){
+	gMenuIndex = (gMenuIndex + gSettingIndex) % gSettingsCount;
+	gScreenMode = SCREEN_MAIN;
+	gInputBoxWriteIndex = 0;
+	if (gRadioMode != RADIO_MODE_RX) {
+		RADIO_Tune(gSettings.CurrentVfo);
+	}
+	UI_DrawMain(false);
+	BEEP_Play(440, 4, 80);
+}
+
+void (*key_handler_fns[])(uint8_t Key) = {
+	[KEY_0] = &KEY_N_fn,
+	[KEY_1] = &KEY_N_fn,
+	[KEY_2] = &KEY_N_fn,
+	[KEY_3] = &KEY_N_fn,
+	[KEY_4] = &KEY_N_fn,
+	[KEY_5] = &KEY_N_fn,
+	[KEY_6] = &KEY_N_fn,
+	[KEY_7] = &KEY_N_fn,
+	[KEY_8] = &KEY_N_fn,
+	[KEY_9] = &KEY_N_fn,
+	[KEY_MENU] = &KEY_MENU_fn,
+	[KEY_UP] = &KEY_ARROWS_fn,
+	[KEY_DOWN] = &KEY_ARROWS_fn,
+	[KEY_EXIT] = &KEY_exit_fn,
+	[KEY_STAR] = &FUNCTION_NOP_a1,
+	[KEY_HASH] = &FUNCTION_NOP_a1,
+	[KEY_NONE] = &FUNCTION_NOP_a1,
+};
+
 void MENU_KeyHandler(uint8_t Key)
 {
-	switch (Key) {
-	case KEY_0: case KEY_1: case KEY_2: case KEY_3:
-	case KEY_4: case KEY_5: case KEY_6: case KEY_7:
-	case KEY_8: case KEY_9:
-		MENU_Digit(Key);
-		BEEP_Play(740, 2, 100);
-		break;
-
-	case KEY_MENU:
-		gMenuIndex = (gMenuIndex + gSettingIndex) % gSettingsCount;
-		UI_DrawString(1, 112, "  ", 2);
-		MENU_DrawSetting();
-		BEEP_Play(740, 3, 80);
-		break;
-
-	case KEY_UP:
-	case KEY_DOWN:
-		UI_DrawString(1, 112, "  ", 2);
-		MENU_Next(Key);
-		MENU_PlayAudio((gMenuIndex + gSettingIndex) % gSettingsCount);
-		BEEP_Play(740, 2, 100);
-		break;
-
-	case KEY_EXIT:
-		gMenuIndex = (gMenuIndex + gSettingIndex) % gSettingsCount;
-		gScreenMode = SCREEN_MAIN;
-		gInputBoxWriteIndex = 0;
-		if (gRadioMode != RADIO_MODE_RX) {
-			RADIO_Tune(gSettings.CurrentVfo);
-		}
-		UI_DrawMain(false);
-		BEEP_Play(440, 4, 80);
-		break;
-
-	default:
-		break;
-	}
+	key_handler_fns[Key](Key);
 }
 
 void MENU_Next(uint8_t Key)
@@ -1401,4 +1417,3 @@ void MENU_PlayAudio(uint8_t MenuID)
 		AUDIO_PlaySampleOptional(ID);
 	}
 }
-
