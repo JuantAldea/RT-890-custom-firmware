@@ -106,5 +106,6 @@ extern uint32_t SFLASH_Offsets[20];
 extern uint32_t SFLASH_FontOffsets[32];
 extern uint8_t gFlashBuffer[8192];
 
-
+void FUNCTION_NOP();
+void FUNCTION_NOP_a1(uint8_t p);
 #endif
